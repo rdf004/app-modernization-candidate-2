@@ -1,0 +1,28 @@
+# Rsyslog config for UBS Doc Pipeline
+# Forwards app logs to Splunk collector
+#
+# Managed by Puppet — do not edit manually
+
+# Local application log file monitoring
+module(load="imfile")
+
+input(type="imfile"
+  File="/var/log/ubs/doc-pipeline.log"
+  Tag="doc-pipeline"
+  Severity="info"
+  Facility="local0"
+)
+
+input(type="imfile"
+  File="/var/log/ubs/reconcile.log"
+  Tag="doc-reconcile"
+  Severity="info"
+  Facility="local0"
+)
+
+# Forward local0 facility to Splunk
+local0.* @@splunk-fwd.internal:514
+
+# Forward all doc-pipeline tagged messages
+:syslogtag, startswith, "doc-" \
+  @@splunk-fwd.internal:514

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi=
+    "http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation=
+    "http://maven.apache.org/POM/4.0.0
+     http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>
+      org.springframework.boot
+    </groupId>
+    <artifactId>
+      spring-boot-starter-parent
+    </artifactId>
+    <version>2.7.18</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.ubs.docpipeline</groupId>
+  <artifactId>doc-processing-pipeline</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>
+    UBS Document Processing Pipeline
+  </name>
+  <description>
+    Document processing and compliance
+    reporting pipeline for UBS banking
+    operations. RHEL 7 on-prem deployment.
+  </description>
+
+  <properties>
+    <java.version>1.8</java.version>
+    <maven.compiler.source>
+      1.8
+    </maven.compiler.source>
+    <maven.compiler.target>
+      1.8
+    </maven.compiler.target>
+    <camel.version>3.14.10</camel.version>
+    <project.build.sourceEncoding>
+      UTF-8
+    </project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- Spring Boot Starters -->
+    <dependency>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-web
+      </artifactId>
+    </dependency>
+    <dependency>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-data-jpa
+      </artifactId>
+    </dependency>
+    <dependency>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-data-redis
+      </artifactId>
+    </dependency>
+    <dependency>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-web-services
+      </artifactId>
+    </dependency>
+    <dependency>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-actuator
+      </artifactId>
+    </dependency>
+
+    <!-- Apache Camel -->
+    <dependency>
+      <groupId>
+        org.apache.camel.springboot
+      </groupId>
+      <artifactId>
+        camel-spring-boot-starter
+      </artifactId>
+      <version>${camel.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>
+        org.apache.camel.springboot
+      </groupId>
+      <artifactId>camel-file-starter</artifactId>
+      <version>${camel.version}</version>
+    </dependency>
+
+    <!-- Oracle JDBC Driver -->
+    <dependency>
+      <groupId>
+        com.oracle.database.jdbc
+      </groupId>
+      <artifactId>ojdbc8</artifactId>
+      <version>21.1.0.0</version>
+    </dependency>
+
+    <!-- Redis client -->
+    <dependency>
+      <groupId>redis.clients</groupId>
+      <artifactId>jedis</artifactId>
+    </dependency>
+
+    <!-- SOAP / JAX-WS -->
+    <dependency>
+      <groupId>
+        org.springframework.ws
+      </groupId>
+      <artifactId>
+        spring-ws-core
+      </artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.xml.ws</groupId>
+      <artifactId>jaxws-api</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>
+        com.sun.xml.ws
+      </groupId>
+      <artifactId>jaxws-rt</artifactId>
+      <version>2.3.7</version>
+    </dependency>
+
+    <!-- H2 for local dev fallback -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Testing -->
+    <dependency>
+      <groupId>
+        org.springframework.boot
+      </groupId>
+      <artifactId>
+        spring-boot-starter-test
+      </artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>
+          org.springframework.boot
+        </groupId>
+        <artifactId>
+          spring-boot-maven-plugin
+        </artifactId>
+      </plugin>
+      <plugin>
+        <groupId>
+          org.apache.maven.plugins
+        </groupId>
+        <artifactId>
+          maven-compiler-plugin
+        </artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+    <finalName>
+      doc-processing-pipeline
+    </finalName>
+  </build>
+</project>

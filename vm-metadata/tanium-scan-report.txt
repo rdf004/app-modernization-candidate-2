@@ -1,0 +1,123 @@
+============================================
+TANIUM ENDPOINT SCAN REPORT
+============================================
+Host:        doc-proc-01.internal.ubs.com
+Scan Date:   2024-11-15 03:22:41 UTC
+Agent:       Tanium Client 7.4.8.1234
+Policy:      UBS-RHEL7-Compliance-v3.2
+============================================
+
+OPERATING SYSTEM
+  Name:       Red Hat Enterprise Linux Server
+  Version:    7.9 (Maipo)
+  Kernel:     3.10.0-1160.105.1.el7.x86_64
+  Arch:       x86_64
+  Uptime:     340 days 14:22:07
+
+INSTALLED PACKAGES (FLAGGED)
+  openssl          1.0.2k-26.el7_9   [EOL]
+  openssl-libs     1.0.2k-26.el7_9   [EOL]
+  java-1.8.0-openjdk  1.8.0.392.b08  [EOL]
+  redis            4.0.14-1.el7       [EOL]
+  nfs-utils        1.3.0-0.68.el7
+
+CUSTOM PACKAGES (NON-STANDARD)
+  ubs-libpdf       2.3.1-1.el7.x86_64
+    Location:  /usr/local/lib/libpdf_ubs.so
+    Type:      Native shared library (ELF)
+    Source:    Binary-only RPM distribution
+    Vendor:    UBS Internal Build Team
+    Notes:     No source code available.
+               Compiled for RHEL 7 x86_64.
+               Linked against OpenSSL 1.0.2k
+               and glibc 2.17.
+               Recompilation required for
+               any OS version change.
+
+NETWORK CONNECTIONS (ESTABLISHED)
+  tcp  0.0.0.0:8443  LISTEN
+       doc-processing-pipeline (java)
+  tcp  10.192.4.47:8080  ESTABLISHED
+       compliance-api SOAP endpoint
+       Owner: Compliance Engineering
+       Migration status: NONE PLANNED
+  tcp  ora-auditdb-01.internal:1521  EST
+       Oracle audit database connection
+  tcp  settle-cache-01.internal:6379  EST
+       Redis cache (sticky sessions)
+  tcp  splunk-fwd.internal:514  ESTABLISHED
+       Rsyslog to Splunk forwarder
+  tcp  nas-docs-01.internal:2049  ESTABLISHED
+       NFS mount (trade-docs)
+  tcp  nas-docs-01.internal:2049  ESTABLISHED
+       NFS mount (compliance-feeds)
+  tcp  nas-archive-01.internal:2049  EST
+       NFS mount (doc-archive)
+
+FILESYSTEM MOUNTS
+  /opt/ubs                ext4  local
+  /mnt/shared-docs        nfs   nas-docs-01
+  /mnt/compliance-feeds   nfs   nas-docs-01
+  /mnt/doc-archive        nfs   nas-archive-01
+
+FILE LOCKS (ACTIVE)
+  /opt/ubs/locks/          3 .lock files
+
+CRON JOBS (12 total)
+  docpipeline  0 2 * * *   reconciliation.sh
+  docpipeline  15 * * * *  lock cleanup
+  docpipeline  0 3 * * *   archive processed
+  root         */5 * * * * NFS health check
+  docpipeline  */10 * * *  Redis health
+  docpipeline  */15 * * *  Oracle health
+  root         */30 * * *  disk space alert
+  docpipeline  */5 * * * * SOAP health check
+  root         0 4 * * *   log rotation
+  root         0 5 * * 0   Splunk restart
+  docpipeline  */20 * * *  stale file detect
+  root         */10 * * *  NFS remount
+
+SECURITY FINDINGS
+  [CRITICAL] OpenSSL 1.0.2k — end of life
+    since 2019-12-31. Known CVEs:
+    CVE-2020-1971, CVE-2021-3449,
+    CVE-2021-23840, CVE-2022-0778.
+    Cannot upgrade without recompiling
+    libpdf_ubs.so (linked against 1.0.2).
+
+  [HIGH] Java 8 — extended support only.
+    Spring Boot 2.7 end of life 2023-11-24.
+    Apache Camel 3.14 end of life.
+
+  [MEDIUM] Redis 4.0.14 — end of life.
+    No TLS support in this version.
+    Traffic to Redis is unencrypted on
+    local subnet.
+
+  [INFO] 340 days uptime — no reboot since
+    last kernel security patch.
+
+COMPLIANCE NOTES
+  - SOAP endpoint at 10.192.4.47:8080 is
+    owned by Compliance Engineering team.
+    No migration or containerization planned.
+    Requires direct L3 network connectivity.
+  - libpdf_ubs.so v2.3.1 installed in
+    /usr/local/lib/ via custom RPM. No Maven
+    Central artifact. No source available.
+    Binary compiled for RHEL 7 glibc 2.17.
+  - 3 NFS mounts from 2 NAS appliances.
+    Used for inter-system file exchange.
+  - 12 cron jobs managing health checks,
+    batch reconciliation, log rotation,
+    and NFS failover.
+  - Redis 4.0 on local subnet at
+    settle-cache-01.internal:6379.
+    Used for sticky session processing state.
+  - Host has 340 days uptime. Last reboot
+    was for kernel CVE-2023-4911 (Looney
+    Tunables).
+
+============================================
+END OF REPORT
+============================================
