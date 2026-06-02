@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:soap=
+    "http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:tns=
+    "http://compliance.ubs.com/validate"
+  xmlns:xsd=
+    "http://www.w3.org/2001/XMLSchema"
+  name="ComplianceValidationService"
+  targetNamespace=
+    "http://compliance.ubs.com/validate">
+
+  <types>
+    <xsd:schema
+      targetNamespace=
+        "http://compliance.ubs.com/validate">
+
+      <xsd:element
+        name="ValidateDocumentRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element
+              name="documentId"
+              type="xsd:string"/>
+            <xsd:element
+              name="fileType"
+              type="xsd:string"/>
+            <xsd:element
+              name="checksum"
+              type="xsd:string"/>
+            <xsd:element
+              name="contentBase64"
+              type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element
+        name="ValidateDocumentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element
+              name="referenceId"
+              type="xsd:string"/>
+            <xsd:element
+              name="compliant"
+              type="xsd:boolean"/>
+            <xsd:element
+              name="riskLevel"
+              type="xsd:string"/>
+            <xsd:element
+              name="violations"
+              type="xsd:string"
+              minOccurs="0"
+              maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="ValidateRequest">
+    <part
+      name="parameters"
+      element=
+        "tns:ValidateDocumentRequest"/>
+  </message>
+
+  <message name="ValidateResponse">
+    <part
+      name="parameters"
+      element=
+        "tns:ValidateDocumentResponse"/>
+  </message>
+
+  <portType
+    name="ComplianceValidationPortType">
+    <operation name="validateDocument">
+      <input message="tns:ValidateRequest"/>
+      <output message="tns:ValidateResponse"/>
+    </operation>
+  </portType>
+
+  <binding
+    name="ComplianceValidationBinding"
+    type="tns:ComplianceValidationPortType">
+    <soap:binding
+      style="document"
+      transport=
+"http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="validateDocument">
+      <soap:operation
+        soapAction="validateDocument"/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service
+    name="ComplianceValidationService">
+    <port
+      name="ComplianceValidationPort"
+      binding=
+        "tns:ComplianceValidationBinding">
+      <soap:address
+        location=
+"http://10.192.4.47:8080/compliance-api/v1/validate"/>
+    </port>
+  </service>
+</definitions>
