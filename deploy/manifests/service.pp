@@ -1,35 +1,36 @@
 # deploy/manifests/service.pp
 #
-# Systemd service definition and application
-# deployment for the document processing
-# pipeline.
+# Systemd service for RHEL 10.
+# Java 21, systemd 255+.
 
 class docpipeline::service (
-  $app_version = $docpipeline::app_version,
+  $app_version =
+    $docpipeline::app_version,
 ) {
 
-  # Deploy JAR from artifact repository
-  file { '/opt/ubs/app/doc-processing'
+  file {
+    '/opt/ubs/app/doc-processing'
     . '-pipeline.jar':
     ensure => 'file',
     source =>
       'puppet:///modules/docpipeline/'
-      . "doc-processing-pipeline-"
+      . 'doc-processing-pipeline-'
       . "${app_version}.jar",
     owner  => 'docpipeline',
     group  => 'docpipeline',
     mode   => '0644',
-    notify => Service['doc-pipeline'],
+    notify =>
+      Service['doc-pipeline'],
   }
 
-  # Systemd unit file
-  file { '/etc/systemd/system/'
+  file {
+    '/etc/systemd/system/'
     . 'doc-pipeline.service':
     ensure  => 'file',
     content => '[Unit]
 Description=UBS Document Processing Pipeline
-After=network.target
-Requires=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -40,15 +41,18 @@ ExecStart=/usr/bin/java \
   -Xms512m -Xmx2048m \
   -Djava.library.path=/usr/local/lib \
   -Dspring.profiles.active=production \
-  -jar /opt/ubs/app/doc-processing-pipeline.jar
+  -jar /opt/ubs/app/\
+doc-processing-pipeline.jar
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=doc-pipeline
 LimitNOFILE=65536
-Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0
-Environment=LD_LIBRARY_PATH=/usr/local/lib
+Environment=JAVA_HOME=\
+/usr/lib/jvm/java-21-openjdk
+Environment=LD_LIBRARY_PATH=\
+/usr/local/lib
 
 [Install]
 WantedBy=multi-user.target
@@ -66,12 +70,12 @@ WantedBy=multi-user.target
     ensure  => 'running',
     enable  => true,
     require => [
-      File['/opt/ubs/app/doc-processing'
+      File['/opt/ubs/app/'
+        . 'doc-processing'
         . '-pipeline.jar'],
       File['/etc/systemd/system/'
         . 'doc-pipeline.service'],
-      Package['java-1.8.0-openjdk'],
-      Package['ubs-libpdf'],
+      Package['java-21-openjdk'],
     ],
   }
 }

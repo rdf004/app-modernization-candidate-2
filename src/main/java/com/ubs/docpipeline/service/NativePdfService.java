@@ -1,23 +1,14 @@
 package com.ubs.docpipeline.service;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation
+    .Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 
-/**
- * JNI bridge to libpdf_ubs.so — a custom UBS
- * PDF parsing library installed at
- * /usr/local/lib/ via internal RPM. Compiled
- * specifically for RHEL 7 x86_64. NOT available
- * as a Maven dependency. Requires recompilation
- * for any OS migration.
- *
- * RPM: ubs-libpdf-2.3.1-1.el7.x86_64.rpm
- * Source: not available (binary-only distro)
- */
 @Service
 public class NativePdfService {
 
@@ -26,10 +17,15 @@ public class NativePdfService {
             NativePdfService.class
         );
 
-    private static final String LIB_PATH =
-        "/usr/local/lib/libpdf_ubs.so";
-
+    private final String libPath;
     private boolean nativeAvailable = false;
+
+    public NativePdfService(
+            @Value("${app.native.lib-path:"
+                + "/usr/local/lib}")
+            String libPath) {
+        this.libPath = libPath;
+    }
 
     static {
         try {
@@ -38,51 +34,40 @@ public class NativePdfService {
             LoggerFactory.getLogger(
                 NativePdfService.class
             ).warn(
-                "libpdf_ubs.so not found. "
-                + "PDF parsing disabled. "
-                + "Ensure RPM is installed."
+                "libpdf_ubs.so not found — "
+                + "PDF parsing disabled"
             );
         }
     }
 
     @PostConstruct
     public void init() {
-        File lib = new File(LIB_PATH);
+        File lib = new File(
+            libPath + "/libpdf_ubs.so"
+        );
         nativeAvailable = lib.exists();
         if (nativeAvailable) {
             LOG.info(
                 "libpdf_ubs.so loaded from {}",
-                LIB_PATH
+                libPath
             );
         } else {
-            LOG.error(
-                "CRITICAL: {} not found. "
-                + "Install ubs-libpdf RPM.",
-                LIB_PATH
+            LOG.warn(
+                "libpdf_ubs.so not at {} — "
+                + "native PDF disabled",
+                libPath
             );
         }
     }
 
-    /**
-     * Parse PDF and extract text content.
-     * Delegates to native libpdf_ubs.so.
-     */
     public native byte[] parsePdf(
         byte[] pdfData
     );
 
-    /**
-     * Extract metadata from PDF document.
-     * Delegates to native libpdf_ubs.so.
-     */
     public native String extractMetadata(
         byte[] pdfData
     );
 
-    /**
-     * Validate PDF structure and signatures.
-     * Delegates to native libpdf_ubs.so.
-     */
     public native boolean validatePdf(
         byte[] pdfData
     );

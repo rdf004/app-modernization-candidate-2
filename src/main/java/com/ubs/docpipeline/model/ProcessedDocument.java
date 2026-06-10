@@ -1,16 +1,14 @@
 package com.ubs.docpipeline.model;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Id;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Column;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import java.util.Date;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import java.time.Instant;
 
 @Entity
 @Table(name = "processed_documents")
@@ -39,7 +37,10 @@ public class ProcessedDocument {
     )
     private String documentId;
 
-    @Column(name = "file_name", nullable = false)
+    @Column(
+        name = "file_name",
+        nullable = false
+    )
     private String fileName;
 
     @Column(name = "file_type")
@@ -67,13 +68,11 @@ public class ProcessedDocument {
     @Column(name = "file_size_bytes")
     private long fileSizeBytes;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "received_at")
-    private Date receivedAt;
+    private Instant receivedAt;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "processed_at")
-    private Date processedAt;
+    private Instant processedAt;
 
     @Column(
         name = "processing_host",
@@ -120,16 +119,16 @@ public class ProcessedDocument {
         return sourcePath;
     }
 
-    public void setSourcePath(String sourcePath) {
-        this.sourcePath = sourcePath;
+    public void setSourcePath(String path) {
+        this.sourcePath = path;
     }
 
     public String getOutputPath() {
         return outputPath;
     }
 
-    public void setOutputPath(String outputPath) {
-        this.outputPath = outputPath;
+    public void setOutputPath(String path) {
+        this.outputPath = path;
     }
 
     public Status getStatus() {
@@ -164,20 +163,20 @@ public class ProcessedDocument {
         this.fileSizeBytes = size;
     }
 
-    public Date getReceivedAt() {
+    public Instant getReceivedAt() {
         return receivedAt;
     }
 
-    public void setReceivedAt(Date receivedAt) {
-        this.receivedAt = receivedAt;
+    public void setReceivedAt(Instant at) {
+        this.receivedAt = at;
     }
 
-    public Date getProcessedAt() {
+    public Instant getProcessedAt() {
         return processedAt;
     }
 
-    public void setProcessedAt(Date processedAt) {
-        this.processedAt = processedAt;
+    public void setProcessedAt(Instant at) {
+        this.processedAt = at;
     }
 
     public String getProcessingHost() {
