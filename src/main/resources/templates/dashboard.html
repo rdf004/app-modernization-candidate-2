@@ -14,129 +14,193 @@
         box-sizing: border-box; }
     body {
       font-family:
-        'Segoe UI', system-ui, sans-serif;
-      background: #0a0e1a;
-      color: #e0e6f0;
+        Frutiger, Arial, Helvetica,
+        sans-serif;
+      background: #ffffff;
+      color: #1c1c1c;
       min-height: 100vh;
+      font-weight: 300;
+      font-size: 17px;
+      line-height: 1.59;
+    }
+    .top-stripe {
+      height: 3px;
+      background: #e60000;
+      width: 100%;
     }
     .header {
-      background: linear-gradient(
-        135deg, #1a1f35, #0d1117
-      );
-      border-bottom: 2px solid #00d4aa;
-      padding: 20px 32px;
+      padding: 24px 130px;
+      border-bottom:
+        1px solid #cccabc;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
     }
     .header h1 {
-      font-size: 1.4rem;
-      color: #00d4aa;
-      font-weight: 600;
+      font-size: 24px;
+      font-weight: 300;
+      color: #1c1c1c;
     }
     .badge {
-      background: #00d4aa;
-      color: #0a0e1a;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 700;
+      background: #e60000;
+      color: #ffffff;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 400;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .badge.warn {
-      background: #f0a030;
+    .hero {
+      padding: 80px 130px 60px;
+      border-left: 4px solid #e60000;
+      margin-left: 126px;
+      margin-top: 60px;
+      margin-bottom: 40px;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      padding: 24px 32px;
+    .hero h2 {
+      font-size: 40px;
+      font-weight: 300;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      font-size: 17px;
+      color: #5a5d5c;
+    }
+    .content {
+      padding: 0 130px 80px;
       max-width: 1200px;
       margin: 0 auto;
     }
-    .card {
-      background: #141824;
-      border: 1px solid #252a3a;
-      border-radius: 12px;
-      padding: 20px;
+    .section {
+      margin-bottom: 80px;
     }
-    .card h2 {
-      font-size: 0.9rem;
-      color: #8892a8;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
+    .section h3 {
+      font-size: 24px;
+      font-weight: 300;
+      margin-bottom: 24px;
+      color: #1c1c1c;
     }
-    .metric {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #00d4aa;
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
     }
-    .metric.error {
-      color: #ff4d6a;
+    .kv-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 12px 0;
+      border-bottom:
+        1px solid #cccabc;
+    }
+    .kv-row .label {
+      color: #5a5d5c;
+      font-size: 14px;
+      font-weight: 300;
+    }
+    .kv-row .value {
+      color: #1c1c1c;
+      font-size: 14px;
+      font-weight: 400;
+      font-family:
+        'SF Mono', Menlo, monospace;
+    }
+    .status-ok {
+      color: #1c1c1c;
+      font-weight: 400;
+      position: relative;
+      padding-left: 14px;
+    }
+    .status-ok::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 8px; height: 8px;
+      background: #00a67e;
+      border-radius: 50%;
+    }
+    .status-err {
+      color: #e60000;
+      font-weight: 400;
+      position: relative;
+      padding-left: 14px;
+    }
+    .status-err::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 8px; height: 8px;
+      background: #e60000;
+      border-radius: 50%;
     }
     table {
       width: 100%;
       border-collapse: collapse;
     }
-    th, td {
-      text-align: left;
-      padding: 8px 12px;
-      border-bottom:
-        1px solid #252a3a;
-      font-size: 0.85rem;
-    }
     th {
-      color: #8892a8;
-      font-weight: 600;
+      text-align: left;
+      padding: 12px 0;
+      color: #5a5d5c;
+      font-size: 14px;
+      font-weight: 400;
+      border-bottom:
+        2px solid #1c1c1c;
     }
-    .status-ok {
-      color: #00d4aa;
-      font-weight: 600;
-    }
-    .status-err {
-      color: #ff4d6a;
-      font-weight: 600;
+    td {
+      text-align: left;
+      padding: 12px 0;
+      font-size: 14px;
+      font-weight: 300;
+      border-bottom:
+        1px solid #cccabc;
+      color: #1c1c1c;
     }
     .file-list {
       list-style: none;
       padding: 0;
     }
     .file-list li {
-      padding: 6px 0;
+      padding: 10px 0;
       border-bottom:
-        1px solid #1a1f30;
-      font-size: 0.85rem;
-      font-family: monospace;
-      color: #b0b8cc;
+        1px solid #cccabc;
+      font-size: 14px;
+      font-family:
+        'SF Mono', Menlo, monospace;
+      color: #1c1c1c;
+      font-weight: 300;
     }
-    .full-width {
-      grid-column: 1 / -1;
+    .file-list li::before {
+      content: '\25B8';
+      color: #e60000;
+      margin-right: 10px;
     }
-    .kv-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 0;
-      border-bottom:
-        1px solid #1a1f30;
+    .empty-state {
+      color: #5a5d5c;
+      font-size: 14px;
+      font-weight: 300;
+      padding: 20px 0;
     }
-    .kv-row .label {
-      color: #8892a8;
-      font-size: 0.85rem;
-    }
-    .kv-row .value {
-      color: #e0e6f0;
-      font-size: 0.85rem;
-      font-family: monospace;
+    .footer {
+      padding: 40px 130px;
+      border-top: 1px solid #cccabc;
+      color: #5a5d5c;
+      font-size: 12px;
+      font-weight: 400;
     }
   </style>
 </head>
 <body>
+  <div class="top-stripe"></div>
   <div class="header">
-    <h1>UBS Document Processing Pipeline</h1>
-    <span class="badge">MODERNIZED</span>
+    <h1>
+      UBS Document Processing Pipeline
+    </h1>
+    <span class="badge">Modernized</span>
     <span class="badge"
-          th:text="'Java ' + ${javaVersion}">
+          th:text="'Java '
+                   + ${javaVersion}">
     </span>
     <span class="badge"
           th:text="'Spring Boot '
@@ -144,114 +208,136 @@
     </span>
   </div>
 
-  <div class="grid">
-    <!-- Runtime Info -->
-    <div class="card">
-      <h2>Runtime Environment</h2>
-      <div th:each=
-            "entry : ${runtimeInfo}">
-        <div class="kv-row">
-          <span class="label"
-                th:text="${entry.key}">
-          </span>
-          <span class="value"
-                th:text="${entry.value}">
-          </span>
+  <div class="hero">
+    <h2>Verification Dashboard</h2>
+    <p>
+      Live operational status of the
+      modernized document processing
+      pipeline.
+    </p>
+  </div>
+
+  <div class="content">
+    <div class="section">
+      <div class="grid-2">
+        <!-- Runtime Info -->
+        <div>
+          <h3>Runtime Environment</h3>
+          <div th:each=
+                "entry : ${runtimeInfo}">
+            <div class="kv-row">
+              <span class="label"
+                    th:text=
+                      "${entry.key}">
+              </span>
+              <span class="value"
+                    th:text=
+                      "${entry.value}">
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service Health -->
+        <div>
+          <h3>Service Health</h3>
+          <div class="kv-row">
+            <span class="label">
+              Database
+            </span>
+            <span th:if="${dbOk}"
+                  class="status-ok">
+              Connected
+            </span>
+            <span th:unless="${dbOk}"
+                  class="status-err">
+              Disconnected
+            </span>
+          </div>
+          <div class="kv-row">
+            <span class="label">
+              Redis Cache
+            </span>
+            <span th:if="${redisOk}"
+                  class="status-ok">
+              Connected
+            </span>
+            <span th:unless="${redisOk}"
+                  class="status-err">
+              Disconnected
+            </span>
+          </div>
+          <div th:each=
+                "entry : ${dirs}">
+            <div class="kv-row">
+              <span class="label"
+                    th:text=
+                      "${entry.key}">
+              </span>
+              <span class="value"
+                    th:text=
+                      "${entry.value}">
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Service Health -->
-    <div class="card">
-      <h2>Service Health</h2>
-      <div class="kv-row">
-        <span class="label">Database</span>
-        <span th:if="${dbOk}"
-              class="status-ok">
-          CONNECTED
-        </span>
-        <span th:unless="${dbOk}"
-              class="status-err">
-          DISCONNECTED
-        </span>
-      </div>
-      <div class="kv-row">
-        <span class="label">Redis Cache</span>
-        <span th:if="${redisOk}"
-              class="status-ok">
-          CONNECTED
-        </span>
-        <span th:unless="${redisOk}"
-              class="status-err">
-          DISCONNECTED
-        </span>
-      </div>
-      <div th:each="entry : ${dirs}">
-        <div class="kv-row">
-          <span class="label"
-                th:text="${entry.key}">
-          </span>
-          <span class="value"
-                th:text="${entry.value}">
-          </span>
+    <div class="section">
+      <div class="grid-2">
+        <!-- Processed Files -->
+        <div>
+          <h3>Processed Documents</h3>
+          <div th:if="${#lists.isEmpty(
+                processedFiles)}">
+            <p class="empty-state">
+              No documents processed yet.
+              Drop a PDF or CSV into the
+              incoming directory.
+            </p>
+          </div>
+          <ul class="file-list"
+              th:unless="${#lists.isEmpty(
+                processedFiles)}">
+            <li th:each=
+                  "f : ${processedFiles}"
+                th:text="${f}">
+            </li>
+          </ul>
+        </div>
+
+        <!-- Report Files -->
+        <div>
+          <h3>Compliance Reports</h3>
+          <div th:if="${#lists.isEmpty(
+                reportFiles)}">
+            <p class="empty-state">
+              No reports generated yet.
+            </p>
+          </div>
+          <ul class="file-list"
+              th:unless="${#lists.isEmpty(
+                reportFiles)}">
+            <li th:each=
+                  "f : ${reportFiles}"
+                th:text="${f}">
+            </li>
+          </ul>
         </div>
       </div>
     </div>
 
-    <!-- Processed Files -->
-    <div class="card">
-      <h2>Processed Documents</h2>
-      <div th:if=
-            "${#lists.isEmpty(processedFiles)}">
-        <p style="color:#8892a8;
-                  font-size:0.85rem">
-          No documents processed yet.
-          Drop a PDF or CSV into the
-          incoming directory.
-        </p>
-      </div>
-      <ul class="file-list"
-          th:unless=
-            "${#lists.isEmpty(processedFiles)}">
-        <li th:each=
-              "f : ${processedFiles}"
-            th:text="${f}">
-        </li>
-      </ul>
-    </div>
-
-    <!-- Report Files -->
-    <div class="card">
-      <h2>Compliance Reports</h2>
-      <div th:if=
-            "${#lists.isEmpty(reportFiles)}">
-        <p style="color:#8892a8;
-                  font-size:0.85rem">
-          No reports generated yet.
-        </p>
-      </div>
-      <ul class="file-list"
-          th:unless=
-            "${#lists.isEmpty(reportFiles)}">
-        <li th:each=
-              "f : ${reportFiles}"
-            th:text="${f}">
-        </li>
-      </ul>
-    </div>
-
-    <!-- Audit Log -->
-    <div class="card full-width">
-      <h2>Recent Audit Log</h2>
-      <div th:if=
-            "${#lists.isEmpty(recentDocs)}">
-        <p style="color:#8892a8;
-                  font-size:0.85rem">
+    <div class="section">
+      <h3>Recent Audit Log</h3>
+      <div th:if="${#lists.isEmpty(
+            recentDocs)}">
+        <p class="empty-state">
           No audit records yet.
         </p>
       </div>
-      <table th:unless=
-              "${#lists.isEmpty(recentDocs)}">
+      <table th:unless="${#lists.isEmpty(
+              recentDocs)}">
         <thead>
           <tr>
             <th>Document ID</th>
@@ -271,6 +357,12 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div class="footer">
+    UBS Document Pipeline v2.0 &mdash;
+    Verification &amp; Operations Console
+    &mdash; Internal Use Only
   </div>
 </body>
 </html>
