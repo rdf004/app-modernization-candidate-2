@@ -5,24 +5,28 @@ import com.ubs.docpipeline.processor
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation
-    .Autowired;
+    .Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Core Camel route for document processing.
- * Receives files from local and NFS ingest
- * routes, processes them, and routes to
- * output directories.
- */
 @Component
 public class DocumentRoute
         extends RouteBuilder {
 
-    @Autowired
-    private IncomingDocProcessor processor;
+    private final IncomingDocProcessor processor;
+    private final String errorDir;
+
+    public DocumentRoute(
+            IncomingDocProcessor processor,
+            @Value("${app.dirs.incoming:"
+                + "/opt/ubs/incoming-docs}")
+            String incomingDir) {
+        this.processor = processor;
+        this.errorDir =
+            "file://" + incomingDir + "/.error";
+    }
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
 
         onException(Exception.class)
             .handled(true)
@@ -31,10 +35,7 @@ public class DocumentRoute
                 "Processing failed: "
                 + "${exception.message}"
             )
-            .to(
-                "file:///opt/ubs/incoming-docs/"
-                + ".error"
-            );
+            .to(errorDir);
 
         from("direct:process-doc")
             .routeId("doc-processing-main")
@@ -48,10 +49,7 @@ public class DocumentRoute
                 )
                     .log("Compliant: "
                         + "${header.docId}")
-                    .to(
-                        "file:///opt/ubs/"
-                        + "processed"
-                    )
+                    .to("direct:processed")
                 .when(
                     header("docStatus")
                     .isEqualTo(
@@ -60,13 +58,12 @@ public class DocumentRoute
                 )
                     .log("Non-compliant: "
                         + "${header.docId}")
-                    .to(
-                        "file:///opt/ubs/"
-                        + "reports/flagged"
-                    )
+                    .to("direct:flagged")
                 .otherwise()
-                    .log("Skipped/failed: "
-                        + "${header.docId}")
+                    .log(
+                        "Skipped/failed: "
+                        + "${header.docId}"
+                    )
             .end()
             .log("Route complete for "
                 + "${header.CamelFileName}");

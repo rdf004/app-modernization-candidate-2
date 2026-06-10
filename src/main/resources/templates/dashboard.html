@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport"
+        content="width=device-width,
+                 initial-scale=1.0"/>
+  <title>
+    UBS Document Pipeline — Verification
+  </title>
+  <style>
+    * { margin: 0; padding: 0;
+        box-sizing: border-box; }
+    body {
+      font-family:
+        'Segoe UI', system-ui, sans-serif;
+      background: #0a0e1a;
+      color: #e0e6f0;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(
+        135deg, #1a1f35, #0d1117
+      );
+      border-bottom: 2px solid #00d4aa;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header h1 {
+      font-size: 1.4rem;
+      color: #00d4aa;
+      font-weight: 600;
+    }
+    .badge {
+      background: #00d4aa;
+      color: #0a0e1a;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge.warn {
+      background: #f0a030;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 24px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #141824;
+      border: 1px solid #252a3a;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card h2 {
+      font-size: 0.9rem;
+      color: #8892a8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .metric {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #00d4aa;
+    }
+    .metric.error {
+      color: #ff4d6a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom:
+        1px solid #252a3a;
+      font-size: 0.85rem;
+    }
+    th {
+      color: #8892a8;
+      font-weight: 600;
+    }
+    .status-ok {
+      color: #00d4aa;
+      font-weight: 600;
+    }
+    .status-err {
+      color: #ff4d6a;
+      font-weight: 600;
+    }
+    .file-list {
+      list-style: none;
+      padding: 0;
+    }
+    .file-list li {
+      padding: 6px 0;
+      border-bottom:
+        1px solid #1a1f30;
+      font-size: 0.85rem;
+      font-family: monospace;
+      color: #b0b8cc;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    .kv-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom:
+        1px solid #1a1f30;
+    }
+    .kv-row .label {
+      color: #8892a8;
+      font-size: 0.85rem;
+    }
+    .kv-row .value {
+      color: #e0e6f0;
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>UBS Document Processing Pipeline</h1>
+    <span class="badge">MODERNIZED</span>
+    <span class="badge"
+          th:text="'Java ' + ${javaVersion}">
+    </span>
+    <span class="badge"
+          th:text="'Spring Boot '
+                   + ${springVersion}">
+    </span>
+  </div>
+
+  <div class="grid">
+    <!-- Runtime Info -->
+    <div class="card">
+      <h2>Runtime Environment</h2>
+      <div th:each=
+            "entry : ${runtimeInfo}">
+        <div class="kv-row">
+          <span class="label"
+                th:text="${entry.key}">
+          </span>
+          <span class="value"
+                th:text="${entry.value}">
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Health -->
+    <div class="card">
+      <h2>Service Health</h2>
+      <div class="kv-row">
+        <span class="label">Database</span>
+        <span th:if="${dbOk}"
+              class="status-ok">
+          CONNECTED
+        </span>
+        <span th:unless="${dbOk}"
+              class="status-err">
+          DISCONNECTED
+        </span>
+      </div>
+      <div class="kv-row">
+        <span class="label">Redis Cache</span>
+        <span th:if="${redisOk}"
+              class="status-ok">
+          CONNECTED
+        </span>
+        <span th:unless="${redisOk}"
+              class="status-err">
+          DISCONNECTED
+        </span>
+      </div>
+      <div th:each="entry : ${dirs}">
+        <div class="kv-row">
+          <span class="label"
+                th:text="${entry.key}">
+          </span>
+          <span class="value"
+                th:text="${entry.value}">
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processed Files -->
+    <div class="card">
+      <h2>Processed Documents</h2>
+      <div th:if=
+            "${#lists.isEmpty(processedFiles)}">
+        <p style="color:#8892a8;
+                  font-size:0.85rem">
+          No documents processed yet.
+          Drop a PDF or CSV into the
+          incoming directory.
+        </p>
+      </div>
+      <ul class="file-list"
+          th:unless=
+            "${#lists.isEmpty(processedFiles)}">
+        <li th:each=
+              "f : ${processedFiles}"
+            th:text="${f}">
+        </li>
+      </ul>
+    </div>
+
+    <!-- Report Files -->
+    <div class="card">
+      <h2>Compliance Reports</h2>
+      <div th:if=
+            "${#lists.isEmpty(reportFiles)}">
+        <p style="color:#8892a8;
+                  font-size:0.85rem">
+          No reports generated yet.
+        </p>
+      </div>
+      <ul class="file-list"
+          th:unless=
+            "${#lists.isEmpty(reportFiles)}">
+        <li th:each=
+              "f : ${reportFiles}"
+            th:text="${f}">
+        </li>
+      </ul>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="card full-width">
+      <h2>Recent Audit Log</h2>
+      <div th:if=
+            "${#lists.isEmpty(recentDocs)}">
+        <p style="color:#8892a8;
+                  font-size:0.85rem">
+          No audit records yet.
+        </p>
+      </div>
+      <table th:unless=
+              "${#lists.isEmpty(recentDocs)}">
+        <thead>
+          <tr>
+            <th>Document ID</th>
+            <th>Action</th>
+            <th>Detail</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each=
+                "row : ${recentDocs}">
+            <td th:text="${row[0]}"></td>
+            <td th:text="${row[1]}"></td>
+            <td th:text="${row[2]}"></td>
+            <td th:text="${row[3]}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

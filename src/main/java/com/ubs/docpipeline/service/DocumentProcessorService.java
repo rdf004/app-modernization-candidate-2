@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation
     .Autowired;
+import org.springframework.beans.factory.annotation
+    .Value;
 import org.springframework.data.redis.core
     .RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,18 +20,13 @@ import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
-import java.util.Date;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.HexFormat;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Core document processing orchestrator.
- * Coordinates file locking, native PDF
- * parsing, compliance validation, Redis
- * state caching, and filesystem output.
- */
 @Service
 public class DocumentProcessorService {
 
@@ -38,43 +35,52 @@ public class DocumentProcessorService {
             DocumentProcessorService.class
         );
 
-    private static final String PROCESSED =
-        "/opt/ubs/processed";
-    private static final String REPORTS =
-        "/opt/ubs/reports";
     private static final String CACHE_PREFIX =
         "docpipeline:state:";
-    private static final long CACHE_TTL_HOURS =
-        24;
+    private static final long
+        CACHE_TTL_HOURS = 24;
 
-    @Autowired
-    private FileLockService lockSvc;
-
-    @Autowired
-    private NativePdfService pdfSvc;
-
-    @Autowired
-    private ComplianceValidationService
+    private final FileLockService lockSvc;
+    private final NativePdfService pdfSvc;
+    private final ComplianceValidationService
         complianceSvc;
-
-    @Autowired
-    private AuditService auditSvc;
+    private final AuditService auditSvc;
+    private final String processedDir;
+    private final String reportsDir;
 
     @Autowired(required = false)
     private RedisTemplate<String, Object>
         redisTemplate;
 
+    public DocumentProcessorService(
+            FileLockService lockSvc,
+            NativePdfService pdfSvc,
+            ComplianceValidationService
+                complianceSvc,
+            AuditService auditSvc,
+            @Value("${app.dirs.processed:"
+                + "/opt/ubs/processed}")
+            String processedDir,
+            @Value("${app.dirs.reports:"
+                + "/opt/ubs/reports}")
+            String reportsDir) {
+        this.lockSvc = lockSvc;
+        this.pdfSvc = pdfSvc;
+        this.complianceSvc = complianceSvc;
+        this.auditSvc = auditSvc;
+        this.processedDir = processedDir;
+        this.reportsDir = reportsDir;
+    }
+
     public ProcessedDocument process(
             File incoming) throws IOException {
         String docId = UUID.randomUUID()
-            .toString()
-            .substring(0, 12);
+            .toString().substring(0, 12);
         String fileName = incoming.getName();
 
         LOG.info(
             "Processing {} as {}",
-            fileName,
-            docId
+            fileName, docId
         );
 
         FileLock lock =
@@ -89,21 +95,9 @@ public class DocumentProcessorService {
 
         try {
             ProcessedDocument doc =
-                new ProcessedDocument();
-            doc.setDocumentId(docId);
-            doc.setFileName(fileName);
-            doc.setSourcePath(
-                incoming.getAbsolutePath()
-            );
-            doc.setReceivedAt(new Date());
-            doc.setStatus(
-                ProcessedDocument
-                    .Status.PROCESSING
-            );
-            doc.setFileSizeBytes(
-                incoming.length()
-            );
-
+                buildInitialDoc(
+                    docId, fileName, incoming
+                );
             cacheState(docId, "PROCESSING");
 
             byte[] data = Files.readAllBytes(
@@ -113,7 +107,8 @@ public class DocumentProcessorService {
                 computeChecksum(data)
             );
 
-            String ext = getExtension(fileName);
+            String ext =
+                getExtension(fileName);
             doc.setFileType(ext);
 
             if ("pdf".equalsIgnoreCase(ext)) {
@@ -121,39 +116,22 @@ public class DocumentProcessorService {
             }
 
             auditSvc.logAction(
-                docId,
-                "RECEIVED",
+                docId, "RECEIVED",
                 "File: " + fileName
-                + " (" + data.length + " bytes)"
+                + " (" + data.length
+                + " bytes)"
             );
 
-            ComplianceResult cr =
-                complianceSvc.validate(
-                    docId, ext, data
-                );
-            doc.setComplianceRef(
-                cr.getReferenceId()
+            applyComplianceResult(
+                doc, docId, ext, data
             );
 
-            if (cr.isCompliant()) {
-                doc.setStatus(
-                    ProcessedDocument
-                        .Status.COMPLIANT
-                );
-            } else {
-                doc.setStatus(
-                    ProcessedDocument
-                        .Status.NON_COMPLIANT
-                );
-            }
-
-            Path outPath = writeOutput(
-                doc, data
-            );
+            Path outPath =
+                writeOutput(doc, data);
             doc.setOutputPath(
                 outPath.toString()
             );
-            doc.setProcessedAt(new Date());
+            doc.setProcessedAt(Instant.now());
 
             cacheState(
                 docId,
@@ -161,20 +139,61 @@ public class DocumentProcessorService {
             );
 
             auditSvc.logAction(
-                docId,
-                "PROCESSED",
+                docId, "PROCESSED",
                 "Status: " + doc.getStatus()
             );
 
             LOG.info(
                 "Completed {} — {}",
-                docId,
-                doc.getStatus()
+                docId, doc.getStatus()
             );
-
             return doc;
         } finally {
             lockSvc.releaseLock(lock, docId);
+        }
+    }
+
+    private ProcessedDocument buildInitialDoc(
+            String docId,
+            String fileName,
+            File incoming) {
+        ProcessedDocument doc =
+            new ProcessedDocument();
+        doc.setDocumentId(docId);
+        doc.setFileName(fileName);
+        doc.setSourcePath(
+            incoming.getAbsolutePath()
+        );
+        doc.setReceivedAt(Instant.now());
+        doc.setStatus(
+            ProcessedDocument.Status.PROCESSING
+        );
+        doc.setFileSizeBytes(incoming.length());
+        return doc;
+    }
+
+    private void applyComplianceResult(
+            ProcessedDocument doc,
+            String docId,
+            String ext,
+            byte[] data) {
+        ComplianceResult cr =
+            complianceSvc.validate(
+                docId, ext, data
+            );
+        doc.setComplianceRef(
+            cr.getReferenceId()
+        );
+        if (cr.isCompliant()) {
+            doc.setStatus(
+                ProcessedDocument
+                    .Status.COMPLIANT
+            );
+        } else {
+            doc.setStatus(
+                ProcessedDocument
+                    .Status.NON_COMPLIANT
+            );
         }
     }
 
@@ -185,16 +204,18 @@ public class DocumentProcessorService {
             try {
                 pdfSvc.validatePdf(data);
                 String meta =
-                    pdfSvc.extractMetadata(data);
+                    pdfSvc
+                        .extractMetadata(data);
                 LOG.info(
                     "PDF metadata for {}: {}",
                     doc.getDocumentId(),
                     meta
                 );
-            } catch (Exception e) {
+            } catch (
+                UnsatisfiedLinkError e
+            ) {
                 LOG.error(
-                    "Native PDF parsing "
-                    + "failed for {}",
+                    "Native PDF failed for {}",
                     doc.getDocumentId(),
                     e
                 );
@@ -210,47 +231,37 @@ public class DocumentProcessorService {
     private Path writeOutput(
             ProcessedDocument doc,
             byte[] data) throws IOException {
-        Path processedDir =
-            Paths.get(PROCESSED);
-        if (!Files.exists(processedDir)) {
-            Files.createDirectories(
-                processedDir
-            );
+        Path pDir = Paths.get(processedDir);
+        if (!Files.exists(pDir)) {
+            Files.createDirectories(pDir);
         }
-
         String outName =
             doc.getDocumentId()
             + "_" + doc.getFileName();
-        Path outPath =
-            processedDir.resolve(outName);
+        Path outPath = pDir.resolve(outName);
         Files.write(outPath, data);
 
-        Path reportsDir = Paths.get(REPORTS);
-        if (!Files.exists(reportsDir)) {
-            Files.createDirectories(reportsDir);
+        Path rDir = Paths.get(reportsDir);
+        if (!Files.exists(rDir)) {
+            Files.createDirectories(rDir);
         }
-
         String rptName =
             doc.getDocumentId() + ".report";
-        Path rptPath =
-            reportsDir.resolve(rptName);
-        String rpt = String.format(
-            "Document: %s\n"
-            + "Status: %s\n"
-            + "Compliance: %s\n"
-            + "Checksum: %s\n"
-            + "Size: %d bytes\n",
-            doc.getFileName(),
-            doc.getStatus(),
-            doc.getComplianceRef(),
-            doc.getChecksum(),
-            doc.getFileSizeBytes()
-        );
-        Files.write(
-            rptPath,
-            rpt.getBytes()
-        );
-
+        Path rptPath = rDir.resolve(rptName);
+        String rpt = """
+            Document: %s
+            Status: %s
+            Compliance: %s
+            Checksum: %s
+            Size: %d bytes
+            """.formatted(
+                doc.getFileName(),
+                doc.getStatus(),
+                doc.getComplianceRef(),
+                doc.getChecksum(),
+                doc.getFileSizeBytes()
+            );
+        Files.writeString(rptPath, rpt);
         return outPath;
     }
 
@@ -258,18 +269,19 @@ public class DocumentProcessorService {
             String docId, String state) {
         if (redisTemplate != null) {
             try {
-                redisTemplate.opsForValue().set(
-                    CACHE_PREFIX + docId,
-                    state,
-                    CACHE_TTL_HOURS,
-                    TimeUnit.HOURS
-                );
-            } catch (Exception e) {
+                redisTemplate
+                    .opsForValue()
+                    .set(
+                        CACHE_PREFIX + docId,
+                        state,
+                        CACHE_TTL_HOURS,
+                        TimeUnit.HOURS
+                    );
+            } catch (RuntimeException e) {
                 LOG.warn(
-                    "Redis cache update "
-                    + "failed for {}",
-                    docId,
-                    e
+                    "Redis cache failed "
+                    + "for {}",
+                    docId, e
                 );
             }
         }
@@ -283,15 +295,14 @@ public class DocumentProcessorService {
                     "SHA-256"
                 );
             byte[] hash = md.digest(data);
-            StringBuilder sb =
-                new StringBuilder();
-            for (byte b : hash) {
-                sb.append(
-                    String.format("%02x", b)
-                );
-            }
-            return sb.toString();
-        } catch (Exception e) {
+            return HexFormat.of()
+                .formatHex(hash);
+        } catch (
+            NoSuchAlgorithmException e
+        ) {
+            LOG.error(
+                "SHA-256 unavailable", e
+            );
             return "CHECKSUM_ERROR";
         }
     }

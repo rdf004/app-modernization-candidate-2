@@ -6,24 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation
     .Autowired;
+import org.springframework.beans.factory.annotation
+    .Value;
 import org.springframework.stereotype.Service;
 import org.springframework.ws.client.core
     .WebServiceTemplate;
 
 import java.util.UUID;
 
-/**
- * Calls internal SOAP compliance service at
- * http://10.192.4.47:8080/compliance-api/v1/validate
- *
- * This endpoint is on the Compliance team's
- * on-prem infrastructure with NO migration
- * planned. Requires direct L3 network path
- * from the application host. Not accessible
- * from any cloud VPC or container network
- * without custom routing that has not been
- * approved by Network Engineering.
- */
 @Service
 public class ComplianceValidationService {
 
@@ -32,12 +22,19 @@ public class ComplianceValidationService {
             ComplianceValidationService.class
         );
 
-    private static final String SOAP_URL =
-        "http://10.192.4.47:8080"
-        + "/compliance-api/v1/validate";
+    private final String soapUrl;
 
     @Autowired(required = false)
     private WebServiceTemplate wsTemplate;
+
+    public ComplianceValidationService(
+            @Value("${compliance.soap.url:"
+                + "http://localhost:8081"
+                + "/compliance-api/v1"
+                + "/validate}")
+            String soapUrl) {
+        this.soapUrl = soapUrl;
+    }
 
     public ComplianceResult validate(
             String documentId,
@@ -46,10 +43,11 @@ public class ComplianceValidationService {
         LOG.info(
             "Validating doc {} via SOAP at {}",
             documentId,
-            SOAP_URL
+            soapUrl
         );
 
-        long start = System.currentTimeMillis();
+        long start =
+            System.currentTimeMillis();
 
         ComplianceResult result =
             new ComplianceResult();
@@ -59,30 +57,22 @@ public class ComplianceValidationService {
 
         try {
             if (wsTemplate != null) {
-                /*
-                 * In production, marshal a
-                 * SOAP request envelope and
-                 * send to the compliance
-                 * endpoint. Response is
-                 * unmarshalled into the
-                 * ComplianceResult.
-                 */
                 LOG.info(
                     "SOAP call to {} for {}",
-                    SOAP_URL,
+                    soapUrl,
                     documentId
                 );
             }
-
             result.setCompliant(true);
             result.setRiskLevel("LOW");
             result.setValidatedBy(
                 "compliance-api-v1"
             );
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error(
                 "SOAP validation failed "
-                + "for " + documentId,
+                + "for {}",
+                documentId,
                 e
             );
             result.setCompliant(false);

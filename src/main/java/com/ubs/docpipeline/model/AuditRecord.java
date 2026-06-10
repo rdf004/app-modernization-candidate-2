@@ -1,14 +1,12 @@
 package com.ubs.docpipeline.model;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Id;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Column;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import java.util.Date;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import java.time.Instant;
 
 @Entity
 @Table(name = "audit_log")
@@ -26,7 +24,10 @@ public class AuditRecord {
     )
     private String documentId;
 
-    @Column(name = "action", nullable = false)
+    @Column(
+        name = "action",
+        nullable = false
+    )
     private String action;
 
     @Column(name = "actor", length = 64)
@@ -35,18 +36,14 @@ public class AuditRecord {
     @Column(name = "hostname", length = 128)
     private String hostname;
 
-    @Column(
-        name = "detail",
-        length = 2000
-    )
+    @Column(name = "detail", length = 2000)
     private String detail;
 
     @Column(name = "source_ip", length = 45)
     private String sourceIp;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at")
-    private Date createdAt;
+    private Instant createdAt;
 
     public AuditRecord() {
     }
@@ -107,11 +104,11 @@ public class AuditRecord {
         this.sourceIp = sourceIp;
     }
 
-    public Date getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Date createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 }

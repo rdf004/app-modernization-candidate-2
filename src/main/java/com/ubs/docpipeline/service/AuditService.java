@@ -1,24 +1,19 @@
 package com.ubs.docpipeline.service;
 
 import com.ubs.docpipeline.model.AuditRecord;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation
-    .Autowired;
+    .Value;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
 import java.net.InetAddress;
-import java.util.Date;
+import java.net.UnknownHostException;
+import java.time.Instant;
 
-/**
- * Audit logging service. Writes to Oracle
- * audit database (ora-auditdb-01.internal).
- * All document processing actions are logged
- * for regulatory compliance.
- */
 @Service
 public class AuditService {
 
@@ -30,6 +25,10 @@ public class AuditService {
     @PersistenceContext
     private EntityManager em;
 
+    @Value("${app.service-name:"
+        + "doc-pipeline-svc}")
+    private String serviceName;
+
     @Transactional
     public void logAction(
             String documentId,
@@ -39,20 +38,23 @@ public class AuditService {
         record.setDocumentId(documentId);
         record.setAction(action);
         record.setDetail(detail);
-        record.setCreatedAt(new Date());
-        record.setActor("doc-pipeline-svc");
+        record.setCreatedAt(Instant.now());
+        record.setActor(serviceName);
 
         try {
-            String host = InetAddress
-                .getLocalHost()
-                .getHostName();
-            record.setHostname(host);
-            record.setSourceIp(
-                InetAddress
-                    .getLocalHost()
-                    .getHostAddress()
+            InetAddress addr =
+                InetAddress.getLocalHost();
+            record.setHostname(
+                addr.getHostName()
             );
-        } catch (Exception e) {
+            record.setSourceIp(
+                addr.getHostAddress()
+            );
+        } catch (UnknownHostException e) {
+            LOG.warn(
+                "Cannot resolve hostname",
+                e
+            );
             record.setHostname("unknown");
         }
 

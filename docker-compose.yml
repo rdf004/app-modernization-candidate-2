@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8443:8443"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      DOC_INCOMING: /data/incoming-docs
+      DOC_PROCESSED: /data/processed
+      DOC_REPORTS: /data/reports
+      DOC_LOCKS: /data/locks
+      DOC_NFS: /data/nfs-incoming
+      COMPLIANCE_URL: >-
+        http://localhost:8081/compliance-api/v1/validate
+    volumes:
+      - pipeline-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "curl"
+        - "-sf"
+        - "http://localhost:8443/actuator/health"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  pipeline-data:
