@@ -5,21 +5,32 @@ import com.ubs.docpipeline.processor
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation
-    .Autowired;
+    .Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Core Camel route for document processing.
- * Receives files from local and NFS ingest
- * routes, processes them, and routes to
- * output directories.
- */
 @Component
 public class DocumentRoute
         extends RouteBuilder {
 
-    @Autowired
-    private IncomingDocProcessor processor;
+    private final IncomingDocProcessor
+        processor;
+
+    @Value("${docpipeline.dirs.incoming:"
+        + "/opt/ubs/incoming-docs}")
+    private String incomingDir;
+
+    @Value("${docpipeline.dirs.processed:"
+        + "/opt/ubs/processed}")
+    private String processedDir;
+
+    @Value("${docpipeline.dirs.reports:"
+        + "/opt/ubs/reports}")
+    private String reportsDir;
+
+    public DocumentRoute(
+            IncomingDocProcessor processor) {
+        this.processor = processor;
+    }
 
     @Override
     public void configure() throws Exception {
@@ -32,8 +43,8 @@ public class DocumentRoute
                 + "${exception.message}"
             )
             .to(
-                "file:///opt/ubs/incoming-docs/"
-                + ".error"
+                "file://" + incomingDir
+                + "/.error"
             );
 
         from("direct:process-doc")
@@ -49,8 +60,8 @@ public class DocumentRoute
                     .log("Compliant: "
                         + "${header.docId}")
                     .to(
-                        "file:///opt/ubs/"
-                        + "processed"
+                        "file://"
+                        + processedDir
                     )
                 .when(
                     header("docStatus")
@@ -61,8 +72,9 @@ public class DocumentRoute
                     .log("Non-compliant: "
                         + "${header.docId}")
                     .to(
-                        "file:///opt/ubs/"
-                        + "reports/flagged"
+                        "file://"
+                        + reportsDir
+                        + "/flagged"
                     )
                 .otherwise()
                     .log("Skipped/failed: "

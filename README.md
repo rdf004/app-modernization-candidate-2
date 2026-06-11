@@ -3,10 +3,10 @@
 **App B — UBS Document Processing &
 Compliance Reporting**
 
-Java 8 / Spring Boot 2.7 / Apache Camel
+Java 21 / Spring Boot 3.4 / Apache Camel 4.8
 application that processes incoming banking
 documents (PDF/CSV) through a compliance
-validation pipeline on RHEL 7.
+validation pipeline. Targets **RHEL 10**.
 
 ## Architecture
 
@@ -20,7 +20,7 @@ validation pipeline on RHEL 7.
  [File Lock] /opt/ubs/locks/*.lock
         |
         v
- [libpdf_ubs.so]  (native RHEL 7 lib)
+ [libpdf_ubs.so]  (native lib — RPM)
         |
         v
  [SOAP Validation]  --> 10.192.4.47:8080
@@ -39,61 +39,103 @@ validation pipeline on RHEL 7.
 ## Key Dependencies
 
 | Dependency | Version | Notes |
-|------------|---------|-------|
-| Java | 1.8.0 | OpenJDK on RHEL 7 |
-| Spring Boot | 2.7.18 | EOL Nov 2023 |
-| Apache Camel | 3.14.10 | File routing |
-| OpenSSL | 1.0.2k | EOL, pinned |
-| libpdf_ubs.so | 2.3.1 | Custom RPM |
-| Redis | 4.0 | On-prem, no TLS |
-| Oracle | 19c | Audit database |
+|---|---|---|
+| Java | 21 (OpenJDK) | RHEL 10 LTS |
+| Spring Boot | 3.4.1 | LTS |
+| Apache Camel | 4.8.2 | File routing |
+| OpenSSL | 3.x | RHEL 10 default |
+| libpdf_ubs.so | TBD | Recompile needed |
+| Redis | 7.x | On-prem, no TLS |
+| Oracle | 19c+ | Audit database |
 
-## Why Containerization Is Impractical
+## Prerequisites (RHEL 10)
 
-1. **Native `.so` library** — `libpdf_ubs.so`
-   compiled for RHEL 7 x86_64, binary-only
-   RPM with no source code. Cannot be included
-   in a container image without recompilation.
+- `java-21-openjdk` and
+  `java-21-openjdk-devel`
+- `nfs-utils` for NFS mounts
+- `redis` CLI for health checks
+- `oracle-instantclient-basic` for
+  sqlplus
+- `ubs-libpdf` RPM (recompiled for
+  RHEL 10 / glibc 2.39+)
+- Network path to Oracle, Redis, SOAP,
+  Splunk, NFS endpoints
 
-2. **Hardcoded SOAP endpoint** — Compliance
-   service at `10.192.4.47:8080` with no
-   migration plan. Requires direct L3 network
-   path not available from K8s pod network.
+## Building
 
-3. **Filesystem-based IPC** — File locking in
-   `/opt/ubs/locks/`, NFS mounts for
-   inter-system file exchange, directory
-   watching for incoming documents.
+Requires Java 21:
 
-4. **OS-level integration** — 12 cron jobs,
-   rsyslog to Splunk, systemd service,
-   OpenSSL version pinning.
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+mvn clean package -DskipTests
+```
 
-5. **Sticky sessions** — Host-pinned Redis
-   on local subnet for processing state
-   cache. No Redis Cluster support.
+Run tests:
 
-## Recommended Path: Lift and Shift to RHEL 8
+```bash
+mvn test
+```
 
-See `vm-metadata/migration-notes.md` for the
-full migration checklist.
+## Deployment
 
-### What Devin Can Automate
+Deployed via Puppet to RHEL 10 hosts.
+See `deploy/manifests/init.pp`.
 
-- Upgrade Java 8 → 17
-- Upgrade Spring Boot 2.7 → 3.x
-- Upgrade Apache Camel 3.14 → 4.x
-- Update Maven dependencies
-- Generate new Puppet manifests for RHEL 8
-- Update systemd and crontab configs
+```bash
+# Systemd service
+systemctl start doc-pipeline
+systemctl status doc-pipeline
+journalctl -u doc-pipeline -f
+```
 
-### What Requires Human Coordination
+## Configuration
 
-- `libpdf_ubs.so` recompilation (RPM team)
-- SOAP endpoint network path verification
-- NFS mount migration
-- OpenSSL 3.x upgrade (after libpdf rebuild)
-- Redis upgrade coordination
+All runtime configuration is externalized
+in `src/main/resources/application.properties`.
+Override per-environment via:
+
+- Spring profiles:
+  `-Dspring.profiles.active=production`
+- Environment variables:
+  `ORACLE_DB_PASSWORD`, etc.
+- System properties:
+  `-Ddocpipeline.redis.host=...`
+
+Key property prefixes:
+
+| Prefix | Controls |
+|---|---|
+| `docpipeline.dirs.*` | Filesystem paths |
+| `docpipeline.redis.*` | Redis connection |
+| `docpipeline.compliance.*` | SOAP URL |
+| `docpipeline.native.*` | Native lib path |
+| `docpipeline.cache.*` | Cache settings |
+| `oracle.*` | Oracle DB connection |
+
+## RHEL 7 → RHEL 10 Changes Summary
+
+**Runtime upgrades:**
+- Java 1.8.0 → 21 (OpenJDK LTS)
+- Spring Boot 2.7.18 → 3.4.1
+- Apache Camel 3.14.10 → 4.8.2
+- ojdbc8 → ojdbc11
+- javax.* → jakarta.* namespace
+
+**Code quality:**
+- Hardcoded config → application.properties
+- @Autowired field → constructor injection
+- java.util.Date → java.time.Instant
+- Exception handling narrowed + logged
+- Long methods extracted for readability
+
+**Deployment:**
+- Puppet: yum → dnf, Java 8 → 21 packages
+- systemd: hardening directives added
+- OpenSSL: 1.0.2k pin removed (3.x default)
+
+See `docs/rhel10-migration-checklist.md` for
+the full migration checklist including items
+requiring team coordination.
 
 ## Project Structure
 
@@ -138,18 +180,10 @@ full migration checklist.
 │   │   └── check-oracle.sh
 │   └── templates/
 │       └── rsyslog.conf.erb
+├── docs/
+│   ├── rhel10-dependency-matrix.md
+│   └── rhel10-migration-checklist.md
 └── vm-metadata/
     ├── tanium-scan-report.txt
     └── migration-notes.md
 ```
-
-## Building
-
-```bash
-mvn clean package -DskipTests
-```
-
-## Deployment
-
-Deployed via Puppet to RHEL 7 hosts.
-See `deploy/manifests/init.pp`.

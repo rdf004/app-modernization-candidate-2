@@ -3,22 +3,15 @@ package com.ubs.docpipeline.service;
 import com.ubs.docpipeline.model.AuditRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation
-    .Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import java.net.InetAddress;
-import java.util.Date;
+import java.net.UnknownHostException;
+import java.time.Instant;
 
-/**
- * Audit logging service. Writes to Oracle
- * audit database (ora-auditdb-01.internal).
- * All document processing actions are logged
- * for regulatory compliance.
- */
 @Service
 public class AuditService {
 
@@ -39,20 +32,22 @@ public class AuditService {
         record.setDocumentId(documentId);
         record.setAction(action);
         record.setDetail(detail);
-        record.setCreatedAt(new Date());
+        record.setCreatedAt(Instant.now());
         record.setActor("doc-pipeline-svc");
 
         try {
-            String host = InetAddress
-                .getLocalHost()
-                .getHostName();
-            record.setHostname(host);
-            record.setSourceIp(
-                InetAddress
-                    .getLocalHost()
-                    .getHostAddress()
+            InetAddress local =
+                InetAddress.getLocalHost();
+            record.setHostname(
+                local.getHostName()
             );
-        } catch (Exception e) {
+            record.setSourceIp(
+                local.getHostAddress()
+            );
+        } catch (UnknownHostException e) {
+            LOG.warn(
+                "Cannot resolve local host", e
+            );
             record.setHostname("unknown");
         }
 

@@ -2,6 +2,8 @@ package com.ubs.docpipeline.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation
+    .Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -9,19 +11,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.channels.
-    OverlappingFileLockException;
+import java.nio.channels
+    .OverlappingFileLockException;
 
-/**
- * File-based locking mechanism using
- * /opt/ubs/locks/ to prevent duplicate
- * processing across multiple instances
- * co-located on the same RHEL host.
- *
- * This pattern assumes all instances share
- * the same filesystem — fundamentally
- * incompatible with container orchestration.
- */
 @Service
 public class FileLockService {
 
@@ -30,24 +22,19 @@ public class FileLockService {
             FileLockService.class
         );
 
-    private static final String LOCK_DIR =
-        "/opt/ubs/locks";
+    @Value("${docpipeline.dirs.locks:"
+        + "/opt/ubs/locks}")
+    private String lockDir;
 
-    /**
-     * Acquire an exclusive file lock for the
-     * given document ID. Returns null if the
-     * document is already being processed by
-     * another instance on this host.
-     */
     public FileLock acquireLock(String docId)
             throws IOException {
-        File lockDir = new File(LOCK_DIR);
-        if (!lockDir.exists()) {
-            lockDir.mkdirs();
+        File dir = new File(lockDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
         }
 
-        String lockFile = LOCK_DIR
-            + "/" + docId + ".lock";
+        String lockFile =
+            lockDir + "/" + docId + ".lock";
         File f = new File(lockFile);
 
         RandomAccessFile raf =
@@ -58,8 +45,8 @@ public class FileLockService {
             FileLock lock = ch.tryLock();
             if (lock == null) {
                 LOG.warn(
-                    "Doc {} locked by another "
-                    + "instance",
+                    "Doc {} locked by another"
+                    + " instance",
                     docId
                 );
                 raf.close();
@@ -82,10 +69,6 @@ public class FileLockService {
         }
     }
 
-    /**
-     * Release the file lock and delete the
-     * .lock file.
-     */
     public void releaseLock(
             FileLock lock, String docId) {
         try {
@@ -94,7 +77,7 @@ public class FileLockService {
                 lock.channel().close();
             }
             File lockFile = new File(
-                LOCK_DIR + "/"
+                lockDir + "/"
                 + docId + ".lock"
             );
             if (lockFile.exists()) {
@@ -106,8 +89,9 @@ public class FileLockService {
             );
         } catch (IOException e) {
             LOG.error(
-                "Failed to release lock "
-                + "for " + docId,
+                "Failed to release lock"
+                + " for {}",
+                docId,
                 e
             );
         }

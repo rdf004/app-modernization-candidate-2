@@ -1,7 +1,7 @@
 # deploy/manifests/init.pp
 #
 # Puppet manifest: UBS Document Processing
-# Pipeline — RHEL 7 deployment orchestration.
+# Pipeline — RHEL 10 deployment.
 #
 # Manages:
 # - libpdf_ubs.so from internal RPM repo
@@ -9,11 +9,11 @@
 # - NFS mounts from upstream systems
 # - Crontab entries for batch reconciliation
 # - Rsyslog forwarding to Splunk
-# - OpenSSL 1.0.2 pinning
-# - Java 8 and application deployment
+# - OpenSSL 3.x (RHEL 10 default)
+# - Java 21 and application deployment
 
 class docpipeline (
-  $app_version = '1.0.0-SNAPSHOT',
+  $app_version = '2.0.0-SNAPSHOT',
   $oracle_host = 'ora-auditdb-01.internal',
   $redis_host  = 'settle-cache-01.internal',
   $splunk_host = 'splunk-fwd.internal',

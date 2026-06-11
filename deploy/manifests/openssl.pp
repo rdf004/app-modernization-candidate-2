@@ -1,49 +1,33 @@
 # deploy/manifests/openssl.pp
 #
-# Pin OpenSSL to 1.0.2k on RHEL 7.
-# This version is EOL but required by
-# libpdf_ubs.so and the Oracle Instant
-# Client. Upgrading OpenSSL without
-# recompiling native dependencies will
-# break the application.
+# OpenSSL on RHEL 10: version 3.x is the
+# system default. No longer pinned.
+#
+# NOTE: libpdf_ubs.so was linked against
+# OpenSSL 1.0.2 on RHEL 7 and MUST be
+# recompiled by the RPM team before it
+# will work with OpenSSL 3.x on RHEL 10.
 
 class docpipeline::openssl {
 
+  # RHEL 10 ships OpenSSL 3.x by default.
+  # Ensure the system package is present.
   package { 'openssl':
-    ensure => '1.0.2k-26.el7_9',
+    ensure => 'installed',
   }
 
   package { 'openssl-libs':
-    ensure => '1.0.2k-26.el7_9',
+    ensure => 'installed',
   }
 
-  package { 'openssl-devel':
-    ensure => '1.0.2k-26.el7_9',
-  }
+  # TODO [RPM Team]: After recompiling
+  # ubs-libpdf for OpenSSL 3.x, remove
+  # any legacy compat shims that may
+  # have been installed as a workaround.
 
-  # Prevent yum from upgrading OpenSSL
-  # during routine patching.
-  # libpdf_ubs.so is linked against 1.0.2
-  # and will segfault on 1.1.x+
-  yumrepo { 'ubs-openssl-pin':
-    descr   => 'OpenSSL version pin',
-    baseurl =>
-      'https://yum.internal.ubs.com'
-      . '/rhel7-pinned/',
-    enabled => 1,
-    exclude => 'openssl*',
-  }
-
-  file {
-    '/etc/yum/pluginconf.d/versionlock.list':
-    ensure  => 'file',
-    content => '0:openssl-1.0.2k-26.el7_9.*
-0:openssl-libs-1.0.2k-26.el7_9.*
-0:openssl-devel-1.0.2k-26.el7_9.*
-',
-  }
-
-  package { 'yum-plugin-versionlock':
+  # dnf versionlock plugin (RHEL 10)
+  package {
+    'python3-dnf-plugin-versionlock':
     ensure => 'installed',
   }
 }
