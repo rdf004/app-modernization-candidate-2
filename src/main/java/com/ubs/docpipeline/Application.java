@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure
 import org.springframework.scheduling.annotation
     .EnableScheduling;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @SpringBootApplication
 @EnableScheduling
