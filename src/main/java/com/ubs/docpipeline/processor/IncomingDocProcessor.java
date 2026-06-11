@@ -8,18 +8,10 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation
-    .Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 
-/**
- * Camel processor that delegates incoming
- * file exchanges to the document processing
- * service. Handles both local filesystem and
- * NFS-mounted file sources.
- */
 @Component
 public class IncomingDocProcessor
         implements Processor {
@@ -29,8 +21,13 @@ public class IncomingDocProcessor
             IncomingDocProcessor.class
         );
 
-    @Autowired
-    private DocumentProcessorService docSvc;
+    private final DocumentProcessorService
+        docSvc;
+
+    public IncomingDocProcessor(
+            DocumentProcessorService docSvc) {
+        this.docSvc = docSvc;
+    }
 
     @Override
     public void process(Exchange exchange)

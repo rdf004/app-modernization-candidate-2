@@ -5,8 +5,6 @@ import com.ubs.docpipeline.processor
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation
-    .Autowired;
-import org.springframework.beans.factory.annotation
     .Value;
 import org.springframework.stereotype.Component;
 
@@ -14,8 +12,8 @@ import org.springframework.stereotype.Component;
 public class DocumentRoute
         extends RouteBuilder {
 
-    @Autowired
-    private IncomingDocProcessor processor;
+    private final IncomingDocProcessor
+        processor;
 
     @Value("${docpipeline.dirs.incoming:"
         + "/opt/ubs/incoming-docs}")
@@ -28,6 +26,11 @@ public class DocumentRoute
     @Value("${docpipeline.dirs.reports:"
         + "/opt/ubs/reports}")
     private String reportsDir;
+
+    public DocumentRoute(
+            IncomingDocProcessor processor) {
+        this.processor = processor;
+    }
 
     @Override
     public void configure() throws Exception {

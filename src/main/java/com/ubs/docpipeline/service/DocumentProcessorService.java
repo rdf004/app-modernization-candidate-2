@@ -7,11 +7,10 @@ import com.ubs.docpipeline.model
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation
-    .Autowired;
-import org.springframework.beans.factory.annotation
     .Value;
 import org.springframework.data.redis.core
     .RedisTemplate;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -21,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.security
+    .NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -33,37 +34,55 @@ public class DocumentProcessorService {
             DocumentProcessorService.class
         );
 
-    @Value("${docpipeline.dirs.processed:"
-        + "/opt/ubs/processed}")
-    private String processedDir;
-
-    @Value("${docpipeline.dirs.reports:"
-        + "/opt/ubs/reports}")
-    private String reportsDir;
-
-    @Value("${docpipeline.cache.prefix:"
-        + "docpipeline:state:}")
-    private String cachePrefix;
-
-    @Value("${docpipeline.cache.ttl-hours:24}")
-    private long cacheTtlHours;
-
-    @Autowired
-    private FileLockService lockSvc;
-
-    @Autowired
-    private NativePdfService pdfSvc;
-
-    @Autowired
-    private ComplianceValidationService
+    private final String processedDir;
+    private final String reportsDir;
+    private final String cachePrefix;
+    private final long cacheTtlHours;
+    private final FileLockService lockSvc;
+    private final NativePdfService pdfSvc;
+    private final ComplianceValidationService
         complianceSvc;
+    private final AuditService auditSvc;
 
-    @Autowired
-    private AuditService auditSvc;
-
-    @Autowired(required = false)
-    private RedisTemplate<String, Object>
+    @Nullable
+    private final RedisTemplate<String, Object>
         redisTemplate;
+
+    public DocumentProcessorService(
+            @Value(
+                "${docpipeline.dirs.processed:"
+                + "/opt/ubs/processed}")
+            String processedDir,
+            @Value(
+                "${docpipeline.dirs.reports:"
+                + "/opt/ubs/reports}")
+            String reportsDir,
+            @Value(
+                "${docpipeline.cache.prefix:"
+                + "docpipeline:state:}")
+            String cachePrefix,
+            @Value(
+                "${docpipeline.cache"
+                + ".ttl-hours:24}")
+            long cacheTtlHours,
+            FileLockService lockSvc,
+            NativePdfService pdfSvc,
+            ComplianceValidationService
+                complianceSvc,
+            AuditService auditSvc,
+            @Nullable
+            RedisTemplate<String, Object>
+                redisTemplate) {
+        this.processedDir = processedDir;
+        this.reportsDir = reportsDir;
+        this.cachePrefix = cachePrefix;
+        this.cacheTtlHours = cacheTtlHours;
+        this.lockSvc = lockSvc;
+        this.pdfSvc = pdfSvc;
+        this.complianceSvc = complianceSvc;
+        this.auditSvc = auditSvc;
+        this.redisTemplate = redisTemplate;
+    }
 
     public ProcessedDocument process(
             File incoming) throws IOException {
@@ -90,20 +109,9 @@ public class DocumentProcessorService {
 
         try {
             ProcessedDocument doc =
-                new ProcessedDocument();
-            doc.setDocumentId(docId);
-            doc.setFileName(fileName);
-            doc.setSourcePath(
-                incoming.getAbsolutePath()
-            );
-            doc.setReceivedAt(new Date());
-            doc.setStatus(
-                ProcessedDocument
-                    .Status.PROCESSING
-            );
-            doc.setFileSizeBytes(
-                incoming.length()
-            );
+                initDocument(
+                    docId, fileName, incoming
+                );
 
             cacheState(docId, "PROCESSING");
 
@@ -134,21 +142,7 @@ public class DocumentProcessorService {
                 complianceSvc.validate(
                     docId, ext, data
                 );
-            doc.setComplianceRef(
-                cr.getReferenceId()
-            );
-
-            if (cr.isCompliant()) {
-                doc.setStatus(
-                    ProcessedDocument
-                        .Status.COMPLIANT
-                );
-            } else {
-                doc.setStatus(
-                    ProcessedDocument
-                        .Status.NON_COMPLIANT
-                );
-            }
+            applyComplianceResult(doc, cr);
 
             Path outPath = writeOutput(
                 doc, data
@@ -178,6 +172,47 @@ public class DocumentProcessorService {
             return doc;
         } finally {
             lockSvc.releaseLock(lock, docId);
+        }
+    }
+
+    private ProcessedDocument initDocument(
+            String docId,
+            String fileName,
+            File incoming) {
+        ProcessedDocument doc =
+            new ProcessedDocument();
+        doc.setDocumentId(docId);
+        doc.setFileName(fileName);
+        doc.setSourcePath(
+            incoming.getAbsolutePath()
+        );
+        doc.setReceivedAt(new Date());
+        doc.setStatus(
+            ProcessedDocument
+                .Status.PROCESSING
+        );
+        doc.setFileSizeBytes(
+            incoming.length()
+        );
+        return doc;
+    }
+
+    private void applyComplianceResult(
+            ProcessedDocument doc,
+            ComplianceResult cr) {
+        doc.setComplianceRef(
+            cr.getReferenceId()
+        );
+        if (cr.isCompliant()) {
+            doc.setStatus(
+                ProcessedDocument
+                    .Status.COMPLIANT
+            );
+        } else {
+            doc.setStatus(
+                ProcessedDocument
+                    .Status.NON_COMPLIANT
+            );
         }
     }
 
@@ -296,7 +331,12 @@ public class DocumentProcessorService {
                 );
             }
             return sb.toString();
-        } catch (Exception e) {
+        } catch (
+            NoSuchAlgorithmException e
+        ) {
+            LOG.error(
+                "SHA-256 unavailable", e
+            );
             return "CHECKSUM_ERROR";
         }
     }

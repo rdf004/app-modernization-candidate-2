@@ -5,9 +5,8 @@ import com.ubs.docpipeline.model
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation
-    .Autowired;
-import org.springframework.beans.factory.annotation
     .Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.ws.client.core
     .WebServiceTemplate;
@@ -22,13 +21,24 @@ public class ComplianceValidationService {
             ComplianceValidationService.class
         );
 
-    @Value("${docpipeline.compliance.soap-url:"
-        + "http://10.192.4.47:8080"
-        + "/compliance-api/v1/validate}")
-    private String soapUrl;
+    private final String soapUrl;
 
-    @Autowired(required = false)
-    private WebServiceTemplate wsTemplate;
+    @Nullable
+    private final WebServiceTemplate
+        wsTemplate;
+
+    public ComplianceValidationService(
+            @Value("${docpipeline.compliance"
+                + ".soap-url:"
+                + "http://10.192.4.47:8080"
+                + "/compliance-api/v1"
+                + "/validate}")
+            String soapUrl,
+            @Nullable
+            WebServiceTemplate wsTemplate) {
+        this.soapUrl = soapUrl;
+        this.wsTemplate = wsTemplate;
+    }
 
     public ComplianceResult validate(
             String documentId,
@@ -65,7 +75,8 @@ public class ComplianceValidationService {
             );
         } catch (Exception e) {
             LOG.error(
-                "SOAP validation failed for {}",
+                "SOAP validation failed"
+                + " for {}",
                 documentId,
                 e
             );
