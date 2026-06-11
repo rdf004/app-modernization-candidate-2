@@ -1,27 +1,27 @@
 # deploy/manifests/packages.pp
 #
-# Package installation from internal RPM
-# repository. Installs Java 8, native PDF
-# library, and required system packages.
+# Package installation via dnf (RHEL 10).
+# Installs Java 21, native PDF library,
+# and required system packages.
 
 class docpipeline::packages {
 
-  # Java 8 — pinned to RHEL 7 OpenJDK
-  package { 'java-1.8.0-openjdk':
+  # Java 21 — RHEL 10 LTS OpenJDK
+  package { 'java-21-openjdk':
     ensure => 'installed',
   }
 
-  package { 'java-1.8.0-openjdk-devel':
+  package { 'java-21-openjdk-devel':
     ensure => 'installed',
   }
 
-  # libpdf_ubs.so — custom UBS PDF parser
-  # Built for RHEL 7 x86_64 ONLY.
-  # Source code not available.
-  # RPM from internal repo:
-  #   yum.internal.ubs.com/rhel7-custom/
+  # TODO [RPM Team]: Recompile ubs-libpdf
+  # for RHEL 10 (glibc 2.39+, OpenSSL 3.x).
+  # Current: built for RHEL 7 (glibc 2.17).
+  # Binary-only; no source available to
+  # Devin. Contact RPM packaging team.
   package { 'ubs-libpdf':
-    ensure  => '2.3.1-1.el7',
+    ensure  => 'installed',
     require => Yumrepo['ubs-internal'],
   }
 
@@ -37,16 +37,17 @@ class docpipeline::packages {
 
   # Oracle Instant Client for sqlplus
   package { 'oracle-instantclient-basic':
-    ensure  => '21.1.0.0.0-1',
+    ensure  => 'installed',
     require => Yumrepo['oracle-public'],
   }
 
-  # Internal RPM repository
+  # Internal RPM repository (dnf)
   yumrepo { 'ubs-internal':
-    descr    => 'UBS Internal RHEL 7 RPMs',
+    descr    =>
+      'UBS Internal RHEL 10 RPMs',
     baseurl  =>
       'https://yum.internal.ubs.com'
-      . '/rhel7-custom/',
+      . '/rhel10-custom/',
     enabled  => 1,
     gpgcheck => 1,
     gpgkey   =>
@@ -57,12 +58,13 @@ class docpipeline::packages {
   yumrepo { 'oracle-public':
     descr    => 'Oracle Instant Client',
     baseurl  =>
-      'https://yum.oracle.com'
-      . '/repo/OracleLinux/OL7/latest/x86_64',
+      'https://yum.oracle.com/repo'
+      . '/OracleLinux/OL10'
+      . '/latest/x86_64',
     enabled  => 1,
     gpgcheck => 1,
     gpgkey   =>
       'https://yum.oracle.com'
-      . '/RPM-GPG-KEY-oracle-ol7',
+      . '/RPM-GPG-KEY-oracle-ol10',
   }
 }
