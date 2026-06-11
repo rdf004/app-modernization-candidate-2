@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security
     .NoSuchAlgorithmException;
-import java.util.Date;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -150,7 +150,7 @@ public class DocumentProcessorService {
             doc.setOutputPath(
                 outPath.toString()
             );
-            doc.setProcessedAt(new Date());
+            doc.setProcessedAt(Instant.now());
 
             cacheState(
                 docId,
@@ -186,7 +186,7 @@ public class DocumentProcessorService {
         doc.setSourcePath(
             incoming.getAbsolutePath()
         );
-        doc.setReceivedAt(new Date());
+        doc.setReceivedAt(Instant.now());
         doc.setStatus(
             ProcessedDocument
                 .Status.PROCESSING

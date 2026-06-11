@@ -6,11 +6,9 @@ import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Column;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import java.util.Date;
+import java.time.Instant;
 
 @Entity
 @Table(name = "processed_documents")
@@ -39,7 +37,10 @@ public class ProcessedDocument {
     )
     private String documentId;
 
-    @Column(name = "file_name", nullable = false)
+    @Column(
+        name = "file_name",
+        nullable = false
+    )
     private String fileName;
 
     @Column(name = "file_type")
@@ -67,13 +68,17 @@ public class ProcessedDocument {
     @Column(name = "file_size_bytes")
     private long fileSizeBytes;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "received_at")
-    private Date receivedAt;
+    @Column(
+        name = "received_at",
+        columnDefinition = "TIMESTAMP"
+    )
+    private Instant receivedAt;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "processed_at")
-    private Date processedAt;
+    @Column(
+        name = "processed_at",
+        columnDefinition = "TIMESTAMP"
+    )
+    private Instant processedAt;
 
     @Column(
         name = "processing_host",
@@ -96,7 +101,8 @@ public class ProcessedDocument {
         return documentId;
     }
 
-    public void setDocumentId(String documentId) {
+    public void setDocumentId(
+            String documentId) {
         this.documentId = documentId;
     }
 
@@ -120,7 +126,8 @@ public class ProcessedDocument {
         return sourcePath;
     }
 
-    public void setSourcePath(String sourcePath) {
+    public void setSourcePath(
+            String sourcePath) {
         this.sourcePath = sourcePath;
     }
 
@@ -128,7 +135,8 @@ public class ProcessedDocument {
         return outputPath;
     }
 
-    public void setOutputPath(String outputPath) {
+    public void setOutputPath(
+            String outputPath) {
         this.outputPath = outputPath;
     }
 
@@ -164,19 +172,21 @@ public class ProcessedDocument {
         this.fileSizeBytes = size;
     }
 
-    public Date getReceivedAt() {
+    public Instant getReceivedAt() {
         return receivedAt;
     }
 
-    public void setReceivedAt(Date receivedAt) {
+    public void setReceivedAt(
+            Instant receivedAt) {
         this.receivedAt = receivedAt;
     }
 
-    public Date getProcessedAt() {
+    public Instant getProcessedAt() {
         return processedAt;
     }
 
-    public void setProcessedAt(Date processedAt) {
+    public void setProcessedAt(
+            Instant processedAt) {
         this.processedAt = processedAt;
     }
 

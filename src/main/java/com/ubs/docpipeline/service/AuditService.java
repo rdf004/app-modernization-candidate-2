@@ -10,7 +10,7 @@ import javax.persistence.PersistenceContext;
 import javax.transaction.Transactional;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Date;
+import java.time.Instant;
 
 @Service
 public class AuditService {
@@ -32,7 +32,7 @@ public class AuditService {
         record.setDocumentId(documentId);
         record.setAction(action);
         record.setDetail(detail);
-        record.setCreatedAt(new Date());
+        record.setCreatedAt(Instant.now());
         record.setActor("doc-pipeline-svc");
 
         try {
