@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation
     .Autowired;
+import org.springframework.beans.factory.annotation
+    .Value;
 import org.springframework.data.redis.core
     .RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,18 +20,11 @@ import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Core document processing orchestrator.
- * Coordinates file locking, native PDF
- * parsing, compliance validation, Redis
- * state caching, and filesystem output.
- */
 @Service
 public class DocumentProcessorService {
 
@@ -38,14 +33,20 @@ public class DocumentProcessorService {
             DocumentProcessorService.class
         );
 
-    private static final String PROCESSED =
-        "/opt/ubs/processed";
-    private static final String REPORTS =
-        "/opt/ubs/reports";
-    private static final String CACHE_PREFIX =
-        "docpipeline:state:";
-    private static final long CACHE_TTL_HOURS =
-        24;
+    @Value("${docpipeline.dirs.processed:"
+        + "/opt/ubs/processed}")
+    private String processedDir;
+
+    @Value("${docpipeline.dirs.reports:"
+        + "/opt/ubs/reports}")
+    private String reportsDir;
+
+    @Value("${docpipeline.cache.prefix:"
+        + "docpipeline:state:}")
+    private String cachePrefix;
+
+    @Value("${docpipeline.cache.ttl-hours:24}")
+    private long cacheTtlHours;
 
     @Autowired
     private FileLockService lockSvc;
@@ -113,7 +114,8 @@ public class DocumentProcessorService {
                 computeChecksum(data)
             );
 
-            String ext = getExtension(fileName);
+            String ext =
+                getExtension(fileName);
             doc.setFileType(ext);
 
             if ("pdf".equalsIgnoreCase(ext)) {
@@ -124,7 +126,8 @@ public class DocumentProcessorService {
                 docId,
                 "RECEIVED",
                 "File: " + fileName
-                + " (" + data.length + " bytes)"
+                + " (" + data.length
+                + " bytes)"
             );
 
             ComplianceResult cr =
@@ -185,7 +188,9 @@ public class DocumentProcessorService {
             try {
                 pdfSvc.validatePdf(data);
                 String meta =
-                    pdfSvc.extractMetadata(data);
+                    pdfSvc.extractMetadata(
+                        data
+                    );
                 LOG.info(
                     "PDF metadata for {}: {}",
                     doc.getDocumentId(),
@@ -193,16 +198,16 @@ public class DocumentProcessorService {
                 );
             } catch (Exception e) {
                 LOG.error(
-                    "Native PDF parsing "
-                    + "failed for {}",
+                    "Native PDF parsing"
+                    + " failed for {}",
                     doc.getDocumentId(),
                     e
                 );
             }
         } else {
             LOG.warn(
-                "libpdf_ubs.so not loaded; "
-                + "skipping native PDF parse"
+                "libpdf_ubs.so not loaded;"
+                + " skipping native PDF parse"
             );
         }
     }
@@ -210,36 +215,34 @@ public class DocumentProcessorService {
     private Path writeOutput(
             ProcessedDocument doc,
             byte[] data) throws IOException {
-        Path processedDir =
-            Paths.get(PROCESSED);
-        if (!Files.exists(processedDir)) {
-            Files.createDirectories(
-                processedDir
-            );
+        Path procPath =
+            Paths.get(processedDir);
+        if (!Files.exists(procPath)) {
+            Files.createDirectories(procPath);
         }
 
         String outName =
             doc.getDocumentId()
             + "_" + doc.getFileName();
         Path outPath =
-            processedDir.resolve(outName);
+            procPath.resolve(outName);
         Files.write(outPath, data);
 
-        Path reportsDir = Paths.get(REPORTS);
-        if (!Files.exists(reportsDir)) {
-            Files.createDirectories(reportsDir);
+        Path rptDir = Paths.get(reportsDir);
+        if (!Files.exists(rptDir)) {
+            Files.createDirectories(rptDir);
         }
 
         String rptName =
             doc.getDocumentId() + ".report";
         Path rptPath =
-            reportsDir.resolve(rptName);
+            rptDir.resolve(rptName);
         String rpt = String.format(
-            "Document: %s\n"
-            + "Status: %s\n"
-            + "Compliance: %s\n"
-            + "Checksum: %s\n"
-            + "Size: %d bytes\n",
+            "Document: %s%n"
+            + "Status: %s%n"
+            + "Compliance: %s%n"
+            + "Checksum: %s%n"
+            + "Size: %d bytes%n",
             doc.getFileName(),
             doc.getStatus(),
             doc.getComplianceRef(),
@@ -258,16 +261,18 @@ public class DocumentProcessorService {
             String docId, String state) {
         if (redisTemplate != null) {
             try {
-                redisTemplate.opsForValue().set(
-                    CACHE_PREFIX + docId,
-                    state,
-                    CACHE_TTL_HOURS,
-                    TimeUnit.HOURS
-                );
+                redisTemplate
+                    .opsForValue()
+                    .set(
+                        cachePrefix + docId,
+                        state,
+                        cacheTtlHours,
+                        TimeUnit.HOURS
+                    );
             } catch (Exception e) {
                 LOG.warn(
-                    "Redis cache update "
-                    + "failed for {}",
+                    "Redis cache update"
+                    + " failed for {}",
                     docId,
                     e
                 );
